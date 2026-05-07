@@ -1,0 +1,176 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  accountType   AccountType @default(INDIVIDUAL)
+  companyName   String?
+  bio           String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  resumes       Resume[]
+  coverLetters  CoverLetter[]
+  donations     Donation[]
+}
+
+enum AccountType {
+  INDIVIDUAL
+  COMPANY
+  ORGANIZATION
+  EDUCATIONAL
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Resume {
+  id              String    @id @default(cuid())
+  userId          String
+  title           String    @default("My Resume")
+  template        ResumeTemplate @default(MODERN)
+  summary         String?   @db.Text
+  phone           String?
+  location        String?
+  website         String?
+  linkedin        String?
+  github          String?
+  isPublic        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiences     Experience[]
+  educations      Education[]
+  skills          Skill[]
+  certifications  Certification[]
+}
+
+enum ResumeTemplate {
+  MODERN
+  MINIMAL
+  PROFESSIONAL
+  CREATIVE
+}
+
+model Experience {
+  id          String    @id @default(cuid())
+  resumeId    String
+  jobTitle    String
+  company     String
+  location    String?
+  description String?   @db.Text
+  startDate   DateTime
+  endDate     DateTime?
+  currentlyWorking Boolean @default(false)
+  createdAt   DateTime  @default(now())
+
+  resume      Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id          String    @id @default(cuid())
+  resumeId    String
+  degree      String
+  field       String
+  school      String
+  location    String?
+  description String?   @db.Text
+  startDate   DateTime
+  endDate     DateTime?
+  currentlyStudying Boolean @default(false)
+  createdAt   DateTime  @default(now())
+
+  resume      Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id          String    @id @default(cuid())
+  resumeId    String
+  name        String
+  proficiency String    @default("Intermediate")
+  createdAt   DateTime  @default(now())
+
+  resume      Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Certification {
+  id          String    @id @default(cuid())
+  resumeId    String
+  name        String
+  issuer      String
+  issueDate   DateTime
+  expiryDate  DateTime?
+  credentialUrl String?
+  createdAt   DateTime  @default(now())
+
+  resume      Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model CoverLetter {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String    @default("My Cover Letter")
+  content     String    @db.Text
+  companyName String?
+  jobPosition String?
+  isPublic    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Donation {
+  id          String    @id @default(cuid())
+  userId      String
+  amount      Float
+  currency    String    @default("USD")
+  stripeId    String?   @unique
+  status      String    @default("pending")
+  message     String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
